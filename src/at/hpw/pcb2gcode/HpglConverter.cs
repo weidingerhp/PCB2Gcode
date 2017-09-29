@@ -115,7 +115,7 @@ namespace at.hpw.pcb2gcode {
 			oStream.Write(string.Format(NumericFormat, "Z{0}", y));
 		}
 
-		internal void convertPD(HpglState state, StreamWriter oStream) {
+		private void convertPD(HpglState state, StreamWriter oStream) {
 			StringBuilder builder = new StringBuilder();
 
 			oStream.Write("M3 S90\n");
@@ -132,7 +132,7 @@ namespace at.hpw.pcb2gcode {
 			// }
 		}
 
-		internal void convertPU(HpglState state, StreamWriter oStream) {
+		private void convertPU(HpglState state, StreamWriter oStream) {
 			StringBuilder builder = new StringBuilder();
 
 			oStream.Write("M5\n");

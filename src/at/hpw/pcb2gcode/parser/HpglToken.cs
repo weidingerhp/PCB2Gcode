@@ -1,7 +1,7 @@
 using System;
 
 namespace at.hpw.pcb2gcode.parser {
-	internal enum HpglToken {
+	public enum HpglToken { // make this public for tests
 		IN, // initialize
 		PU,
 		PD,

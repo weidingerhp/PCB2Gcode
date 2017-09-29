@@ -5,3 +5,5 @@
 /.vs
 /bin
 /src/bin
+/test/bin
+/web/bin
