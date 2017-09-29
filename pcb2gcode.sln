@@ -1,9 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.8
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pcb2gcode", "src\pcb2gcode.csproj", "{9A021048-D133-4745-9655-3DDC191F5758}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{90C8809E-97D5-424A-8EC3-54CA03FA8B0D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "web", "web\web.csproj", "{09160188-92BB-4885-9301-3AFB6A6EF44F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{9A021048-D133-4745-9655-3DDC191F5758}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A021048-D133-4745-9655-3DDC191F5758}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9A021048-D133-4745-9655-3DDC191F5758}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90C8809E-97D5-424A-8EC3-54CA03FA8B0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90C8809E-97D5-424A-8EC3-54CA03FA8B0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90C8809E-97D5-424A-8EC3-54CA03FA8B0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90C8809E-97D5-424A-8EC3-54CA03FA8B0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09160188-92BB-4885-9301-3AFB6A6EF44F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09160188-92BB-4885-9301-3AFB6A6EF44F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09160188-92BB-4885-9301-3AFB6A6EF44F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09160188-92BB-4885-9301-3AFB6A6EF44F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

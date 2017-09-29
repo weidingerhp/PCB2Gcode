@@ -1,0 +1,13 @@
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\test.deps.json
+D:\workspaces\private\pcb2gcode\test\obj\Debug\netcoreapp2.0\test.csprojResolveAssemblyReference.cache
+D:\workspaces\private\pcb2gcode\test\obj\Debug\netcoreapp2.0\test.AssemblyInfo.cs
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\test.dll
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\test.pdb
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\xunit.abstractions.dll
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\xunit.assert.dll
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\xunit.core.dll
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\xunit.execution.dotnet.dll
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\pcb2gcode.dll
+D:\workspaces\private\pcb2gcode\test\bin\Debug\netcoreapp2.0\pcb2gcode.pdb
+D:\workspaces\private\pcb2gcode\test\obj\Debug\netcoreapp2.0\test.dll
+D:\workspaces\private\pcb2gcode\test\obj\Debug\netcoreapp2.0\test.pdb
