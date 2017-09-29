@@ -33,7 +33,8 @@ namespace web
                 app.UseDeveloperExceptionPage();
                 app.UseWebpackDevMiddleware(new WebpackDevMiddlewareOptions
                 {
-                    HotModuleReplacement = true
+                    HotModuleReplacement = true,
+                    ReactHotModuleReplacement = true
                 });
             }
             else

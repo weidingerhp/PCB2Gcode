@@ -1,37 +1,41 @@
 const path = require('path');
 const webpack = require('webpack');
-const merge = require('webpack-merge');
-const AotPlugin = require('@ngtools/webpack').AotPlugin;
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const CheckerPlugin = require('awesome-typescript-loader').CheckerPlugin;
+const merge = require('webpack-merge');
 
 module.exports = (env) => {
-    // Configuration in common to both client-side and server-side bundles
     const isDevBuild = !(env && env.prod);
-    const sharedConfig = {
+
+    // Configuration in common to both client-side and server-side bundles
+    const sharedConfig = () => ({
         stats: { modules: false },
-        context: __dirname,
-        resolve: { extensions: [ '.js', '.ts' ] },
+        resolve: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },
         output: {
             filename: '[name].js',
             publicPath: 'dist/' // Webpack dev middleware, if enabled, handles requests for this URL prefix
         },
         module: {
             rules: [
-                { test: /\.ts$/, include: /ClientApp/, use: isDevBuild ? ['awesome-typescript-loader?silent=true', 'angular2-template-loader'] : '@ngtools/webpack' },
-                { test: /\.html$/, use: 'html-loader?minimize=false' },
-                { test: /\.css$/, use: [ 'to-string-loader', isDevBuild ? 'css-loader' : 'css-loader?minimize' ] },
+                { test: /\.tsx?$/, include: /ClientApp/, use: 'awesome-typescript-loader?silent=true' },
                 { test: /\.(png|jpg|jpeg|gif|svg)$/, use: 'url-loader?limit=25000' }
             ]
         },
         plugins: [new CheckerPlugin()]
-    };
+    });
 
     // Configuration for client-side bundle suitable for running in browsers
     const clientBundleOutputDir = './wwwroot/dist';
-    const clientBundleConfig = merge(sharedConfig, {
-        entry: { 'main-client': './ClientApp/boot.browser.ts' },
+    const clientBundleConfig = merge(sharedConfig(), {
+        entry: { 'main-client': './ClientApp/boot-client.tsx' },
+        module: {
+            rules: [
+                { test: /\.css$/, use: ExtractTextPlugin.extract({ use: isDevBuild ? 'css-loader' : 'css-loader?minimize' }) }
+            ]
+        },
         output: { path: path.join(__dirname, clientBundleOutputDir) },
         plugins: [
+            new ExtractTextPlugin('site.css'),
             new webpack.DllReferencePlugin({
                 context: __dirname,
                 manifest: require('./wwwroot/dist/vendor-manifest.json')
@@ -44,19 +48,14 @@ module.exports = (env) => {
             })
         ] : [
             // Plugins that apply in production builds only
-            new webpack.optimize.UglifyJsPlugin(),
-            new AotPlugin({
-                tsConfigPath: './tsconfig.json',
-                entryModule: path.join(__dirname, 'ClientApp/app/app.module.browser#AppModule'),
-                exclude: ['./**/*.server.ts']
-            })
+            new webpack.optimize.UglifyJsPlugin()
         ])
     });
 
     // Configuration for server-side (prerendering) bundle suitable for running in Node
-    const serverBundleConfig = merge(sharedConfig, {
+    const serverBundleConfig = merge(sharedConfig(), {
         resolve: { mainFields: ['main'] },
-        entry: { 'main-server': './ClientApp/boot.server.ts' },
+        entry: { 'main-server': './ClientApp/boot-server.tsx' },
         plugins: [
             new webpack.DllReferencePlugin({
                 context: __dirname,
@@ -64,14 +63,7 @@ module.exports = (env) => {
                 sourceType: 'commonjs2',
                 name: './vendor'
             })
-        ].concat(isDevBuild ? [] : [
-            // Plugins that apply in production builds only
-            new AotPlugin({
-                tsConfigPath: './tsconfig.json',
-                entryModule: path.join(__dirname, 'ClientApp/app/app.module.server#AppModule'),
-                exclude: ['./**/*.browser.ts']
-            })
-        ]),
+        ],
         output: {
             libraryTarget: 'commonjs',
             path: path.join(__dirname, './ClientApp/dist')
