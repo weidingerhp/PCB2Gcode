@@ -52,6 +52,10 @@ namespace at.hpw.pcb2gcode {
 						}
 						token = tokenizer.readNextToken();
 						break;
+					case HpglToken.AA:
+						state.LastMovementAbsolute = true;
+						token = MakeArc(tokenizer, state, oStream);
+						break;
 					default:
 						Console.Out.Write("Unknown token " + token);
 						token = tokenizer.readNextToken();
@@ -66,19 +70,64 @@ namespace at.hpw.pcb2gcode {
 
 		}
 
-		private object MakeMovements(HpglTokenizer tokenizer, HpglState state, StreamWriter oStream) {
+		private HpglToken expectHpglToken(HpglTokenizer tokenizer) {
+			object currentToken = tokenizer.readNextToken();
+			// if (!(tokenizer.readNextToken() is HpglToken)) {
+			// 	tokenizer.throwParserException("Expected HpglToken but got " + currentToken);
+			// }
+			return (HpglToken) currentToken;
+		}
+
+		private void expectHpglToken(HpglTokenizer tokenizer, HpglToken token) {
+			HpglToken currentToken = expectHpglToken(tokenizer);
+			if (currentToken != HpglToken.COMMA) {
+				tokenizer.throwParserException("Expected " + Enum.GetName(typeof(HpglToken), token) + " but got " + Enum.GetName(typeof(HpglToken), currentToken));
+			}
+		}
+
+		private double expectNumericToken(HpglTokenizer tokenizer, string message = "Expected Numeric Value") {
+			object currentToken = tokenizer.readNextToken();
+			if (!(currentToken is double)) {
+				tokenizer.throwParserException(message + "; got: " + currentToken);
+			}
+			return (double) currentToken;	
+		}
+
+        private object MakeArc(HpglTokenizer tokenizer, HpglState state, StreamWriter oStream)
+        {
+			// AA pivotX, pivotY, angle [,granulatrity];
+			double xcenter = expectNumericToken(tokenizer, "Expected x-value");
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double ycenter = expectNumericToken(tokenizer, "Expected y-value");
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double angle = expectNumericToken(tokenizer, "Expected angle");
+			HpglToken nextHpgl = expectHpglToken(tokenizer);
+			if (nextHpgl == HpglToken.SEMICOLON) return tokenizer.readNextToken();
+			if (nextHpgl == HpglToken.COMMA) {
+				expectNumericToken(tokenizer, "Expected optional granularity");
+				nextHpgl = expectHpglToken(tokenizer);
+			}
+			expectHpglToken(tokenizer, HpglToken.SEMICOLON);
+
+			// do the arc calculation
+			// TODO:
+			// use G02 (clockwise, negative angle) or G03(counterclockwise, positive angle)
+			// from current point using x and y from params above
+			// see http://www.devenezia.com/docs/HP/index.html?1901 (HPGL)
+			// and http://s3.cnccookbook.com/CCCNCGCodeArcsG02G03.htm (GCODE)
+			// for info
+		
+			if (nextHpgl == HpglToken.EOF) return nextHpgl;
+			return tokenizer.readNextToken();
+        }
+
+        private object MakeMovements(HpglTokenizer tokenizer, HpglState state, StreamWriter oStream) {
 			object currentToken = tokenizer.readNextToken();
 			HpglToken nextHpgl;
 			while (currentToken is double) {
 				double xval = (double)currentToken;
-				if (((HpglToken)tokenizer.readNextToken()) != HpglToken.COMMA) {
-					tokenizer.throwParserException("Expected ','");
-				}
-				currentToken = tokenizer.readNextToken();
-				if (!(currentToken is double)) {
-					tokenizer.throwParserException("Expected X and Y value");
-				}
-				double yval = (double)currentToken;
+				expectHpglToken(tokenizer, HpglToken.COMMA);
+				double yval = expectNumericToken(tokenizer, "Expected X and Y value");
 
 				if (state.LastMovementAbsolute) {
 					convertAbsoluteMovement(state, xval, yval, oStream);
@@ -86,7 +135,7 @@ namespace at.hpw.pcb2gcode {
 					convertRelativeMovement(state, xval, yval, oStream);
 				}
 
-				nextHpgl = (HpglToken)tokenizer.readNextToken();
+				nextHpgl = expectHpglToken(tokenizer);
 				if (nextHpgl == HpglToken.SEMICOLON) return tokenizer.readNextToken();
 				if (nextHpgl == HpglToken.EOF) return nextHpgl;
 				if (nextHpgl == HpglToken.COMMA) {
