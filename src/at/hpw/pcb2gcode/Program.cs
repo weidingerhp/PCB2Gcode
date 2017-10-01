@@ -7,6 +7,8 @@ namespace at.hpw.pcb2gcode {
 	class Program {
 		static void Main(string[] args) {
 			HpglConverter converter = new HpglConverter();
+			converter.InitPosition0 = true;
+
 			using (var oFile = System.IO.File.CreateText(args[1])) {
 				using (var iFile = System.IO.File.OpenText(args[0])) {
 
@@ -16,12 +18,12 @@ namespace at.hpw.pcb2gcode {
 					converter.ConvertHpgl(iFile, oFile);
 				}
 
-				String input = "PU;\nPA 0,0;\n"; // reset to initial position
-				MemoryStream inputStream = new MemoryStream(Encoding.UTF8.GetBytes(input));
-				using (StreamReader rdr = new StreamReader(inputStream)) {
-					converter.ConvertHpgl(rdr, oFile);
-				}
-				inputStream.Dispose();
+				//String input = "PU;\nPA 0,0;\n"; // reset to initial position
+				//MemoryStream inputStream = new MemoryStream(Encoding.UTF8.GetBytes(input));
+				//using (StreamReader rdr = new StreamReader(inputStream)) {
+				//	converter.ConvertHpgl(rdr, oFile);
+				//}
+				//inputStream.Dispose();
 					
 			}
 		}

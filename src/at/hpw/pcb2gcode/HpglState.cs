@@ -16,6 +16,11 @@ namespace at.hpw.pcb2gcode {
 		public HpglConverter converter { get; private set; }
 		public bool LastMovementAbsolute { get; internal set; }
 
+		public double XMin {get; set;}
+		public double YMin {get; set;}
+		public double XMax {get; set;}
+		public double YMax {get; set;}
+
 		internal HpglState(float x, float y, PenState pen, HpglConverter converter) {
 			this.converter = converter;
 			this.XPos = x;
@@ -23,6 +28,10 @@ namespace at.hpw.pcb2gcode {
 			this.PenPosition = pen;
 			this.PenNumber = 0;
 			this.LastMovementAbsolute = true; // default according to HPGL-Spec
+			XMin = 0;
+			XMax = 0;
+			YMin = 100;
+			YMax = 100;
 		}
 	}
 

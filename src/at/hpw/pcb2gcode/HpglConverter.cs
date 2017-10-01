@@ -11,11 +11,15 @@ namespace at.hpw.pcb2gcode {
 		public double XFactor { get; private set; }
 		public double YFactor { get; private set; }
 		public double ZFactor { get; private set; }
+		public bool InitPosition0 { get; set; }
+		public bool FlipXY { get; set; }
 
 		public HpglConverter() {
 			NumericFormat = new CultureInfo("en-US").NumberFormat;
-			XFactor = 0.00762; // initial Values
-			YFactor = 0.00762; // initial Values
+			XFactor = -0.00762; // initial Values
+			YFactor = -0.00762; // initial Values
+			InitPosition0 = true;
+			FlipXY = false;
 		}
 
 		public void ConvertHpgl(StreamReader iStream, StreamWriter oStream) {
@@ -56,6 +60,20 @@ namespace at.hpw.pcb2gcode {
 						state.LastMovementAbsolute = true;
 						token = MakeArc(tokenizer, state, oStream);
 						break;
+					case HpglToken.IN:
+						token = tokenizer.readNextToken();
+						continue;
+					case HpglToken.IP:
+						state.XMin = expectNumericToken(tokenizer);
+						expectHpglToken(tokenizer, HpglToken.COMMA);
+						state.YMin = expectNumericToken(tokenizer);
+						expectHpglToken(tokenizer, HpglToken.COMMA);
+						state.XMax = expectNumericToken(tokenizer);
+						expectHpglToken(tokenizer, HpglToken.COMMA);
+						state.YMax = expectNumericToken(tokenizer);
+						expectHpglToken(tokenizer, HpglToken.SEMICOLON);
+						token = tokenizer.readNextToken();
+						continue;
 					default:
 						Console.Out.Write("Unknown token " + token);
 						token = tokenizer.readNextToken();
@@ -68,6 +86,10 @@ namespace at.hpw.pcb2gcode {
 				}
 			}
 
+			if (InitPosition0) {
+				state.LastMovementAbsolute = true;  //assuming everything we do is absolute
+				convertMovementToGcode(state, 0, 0, oStream);
+			}
 		}
 
 		private HpglToken expectHpglToken(HpglTokenizer tokenizer) {
@@ -80,7 +102,7 @@ namespace at.hpw.pcb2gcode {
 
 		private void expectHpglToken(HpglTokenizer tokenizer, HpglToken token) {
 			HpglToken currentToken = expectHpglToken(tokenizer);
-			if (currentToken != HpglToken.COMMA) {
+			if (currentToken != token) {
 				tokenizer.throwParserException("Expected " + Enum.GetName(typeof(HpglToken), token) + " but got " + Enum.GetName(typeof(HpglToken), currentToken));
 			}
 		}
@@ -203,13 +225,13 @@ namespace at.hpw.pcb2gcode {
 
 		private void convertMovementToGcode(HpglState state, double x, double y, StreamWriter oStream) {
 			if (state.PenPosition == HpglState.PenState.PenUp) {
-				oStream.Write("G1 ");
+				oStream.Write("G0 ");
 			} else {
 				oStream.Write("G1 ");
 			}
-			convertXCoord(state, x, oStream);
+			convertXCoord(state, FlipXY ? y : x, oStream);
 			oStream.Write(" ");
-			convertYCoord(state, y, oStream);
+			convertYCoord(state, FlipXY ? x : y, oStream);
 			oStream.Write("\n");
 		}
 	}
