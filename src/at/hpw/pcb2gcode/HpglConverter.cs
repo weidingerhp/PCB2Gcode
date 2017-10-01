@@ -63,15 +63,8 @@ namespace at.hpw.pcb2gcode {
 					case HpglToken.IN:
 						token = tokenizer.readNextToken();
 						continue;
-					case HpglToken.IP:
-						state.XMin = expectNumericToken(tokenizer);
-						expectHpglToken(tokenizer, HpglToken.COMMA);
-						state.YMin = expectNumericToken(tokenizer);
-						expectHpglToken(tokenizer, HpglToken.COMMA);
-						state.XMax = expectNumericToken(tokenizer);
-						expectHpglToken(tokenizer, HpglToken.COMMA);
-						state.YMax = expectNumericToken(tokenizer);
-						expectHpglToken(tokenizer, HpglToken.SEMICOLON);
+					case HpglToken.IP: 
+						setScalingAndOffset(tokenizer);
 						token = tokenizer.readNextToken();
 						continue;
 					default:
@@ -92,7 +85,33 @@ namespace at.hpw.pcb2gcode {
 			}
 		}
 
-		private HpglToken expectHpglToken(HpglTokenizer tokenizer) {
+        private void setScalingAndOffset(HpglTokenizer tokenizer)
+        {
+			double p1x = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double p1y = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double p2x = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double p2y = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.SEMICOLON);
+
+			// expect scaling directly after this
+			expectHpglToken(tokenizer, HpglToken.SC);
+			double xmin = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double xmax = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double ymin = expectNumericToken(tokenizer);
+			expectHpglToken(tokenizer, HpglToken.COMMA);
+			double ymax = expectNumericToken(tokenizer);
+
+			// correct scaling factors
+			XFactor *= (xmax-xmin) / (p2x-p1x);
+			YFactor *= (ymax-ymin) / (p2y-p1y);
+        }
+
+        private HpglToken expectHpglToken(HpglTokenizer tokenizer) {
 			object currentToken = tokenizer.readNextToken();
 			// if (!(tokenizer.readNextToken() is HpglToken)) {
 			// 	tokenizer.throwParserException("Expected HpglToken but got " + currentToken);

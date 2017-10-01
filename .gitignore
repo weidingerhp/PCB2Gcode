@@ -1,9 +1,11 @@
 /src/obj
 /test/obj
 /web/obj
+/console/obj
 /web/node_modules
 /.vs
 /bin
 /src/bin
 /test/bin
 /web/bin
+/console/bin
