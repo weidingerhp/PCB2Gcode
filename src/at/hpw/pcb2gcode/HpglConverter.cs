@@ -141,7 +141,7 @@ namespace at.hpw.pcb2gcode {
 			expectHpglToken(tokenizer, HpglToken.COMMA);
 			double ycenter = expectNumericToken(tokenizer, "Expected y-value");
 			expectHpglToken(tokenizer, HpglToken.COMMA);
-			double angle = expectNumericToken(tokenizer, "Expected angle");
+			double angle = expectNumericToken(tokenizer, "Expected angle"); // Caution - this angle seems to be in DEG instead of RAD
 			HpglToken nextHpgl = expectHpglToken(tokenizer);
 			if (nextHpgl == HpglToken.SEMICOLON) return tokenizer.readNextToken();
 			if (nextHpgl == HpglToken.COMMA) {
@@ -157,6 +157,17 @@ namespace at.hpw.pcb2gcode {
 			// see http://www.devenezia.com/docs/HP/index.html?1901 (HPGL)
 			// and http://s3.cnccookbook.com/CCCNCGCodeArcsG02G03.htm (GCODE)
 			// for info
+			// calculat the start angle
+			int Q = 1; // specify quadrant
+			if (xcenter > state.XPos) Q=2;
+			if (ycenter < state.YPos) Q=5-Q; // 2 or 3
+
+			double radius = Math.Sqrt(Math.Pow(xcenter-state.XPos, 2) + Math.Pow(ycenter-state.YPos, 2));
+			double startAngle = Math.Asin(Math.Abs((state.XPos - xcenter) / radius));
+			startAngle = startAngle + ((Q-1) + (Math.PI / 2));
+
+			// TODO: Process as much quadrants as needed (each one has to have a G2 or G3)
+
 		
 			if (nextHpgl == HpglToken.EOF) return nextHpgl;
 			return tokenizer.readNextToken();
