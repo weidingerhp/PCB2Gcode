@@ -143,12 +143,13 @@ namespace at.hpw.pcb2gcode {
 			expectHpglToken(tokenizer, HpglToken.COMMA);
 			double angle = expectNumericToken(tokenizer, "Expected angle"); // Caution - this angle seems to be in DEG instead of RAD
 			HpglToken nextHpgl = expectHpglToken(tokenizer);
-			if (nextHpgl == HpglToken.SEMICOLON) return tokenizer.readNextToken();
 			if (nextHpgl == HpglToken.COMMA) {
 				expectNumericToken(tokenizer, "Expected optional granularity");
 				nextHpgl = expectHpglToken(tokenizer);
 			}
-			expectHpglToken(tokenizer, HpglToken.SEMICOLON);
+			if (nextHpgl != HpglToken.SEMICOLON) {
+				tokenizer.throwParserException("Expected SEMICOLON");
+			}
 
 			// do the arc calculation
 			// TODO:
@@ -162,11 +163,52 @@ namespace at.hpw.pcb2gcode {
 			if (xcenter > state.XPos) Q=2;
 			if (ycenter < state.YPos) Q=5-Q; // 2 or 3
 
+			double x1 = state.XPos;
+			double y1 = state.YPos;
+			double xdiv;
+			double ydiv;
+
+			angle = (angle * (Math.PI * 2) / 360);
+
 			double radius = Math.Sqrt(Math.Pow(xcenter-state.XPos, 2) + Math.Pow(ycenter-state.YPos, 2));
 			double startAngle = Math.Asin(Math.Abs((state.XPos - xcenter) / radius));
 			startAngle = startAngle + ((Q-1) + (Math.PI / 2));
-
+			double remainAngle = angle + startAngle;
+			double lastAngle = startAngle;
+			if (remainAngle < 0) remainAngle = remainAngle + (2 * Math.PI); 
 			// TODO: Process as much quadrants as needed (each one has to have a G2 or G3)
+			Console.Out.WriteLine("Converting arc radius {0}, startAngle {1}, lastAngle {2}, remainAngle {3}", radius, startAngle, lastAngle, remainAngle);
+
+			// This is my first shot - this can be way more performant....
+			while (remainAngle > 0.0001) {
+				double nextAngle = remainAngle;
+				if ((remainAngle - lastAngle) > (Math.PI / 2)) {
+					// go to the next quater
+					if (lastAngle % (Math.PI / 2) > 0.001) { // its double - so == 0 is not reliable
+						nextAngle = lastAngle - lastAngle % (Math.PI / 2);
+					} else {
+						nextAngle = lastAngle - (Math.PI / 2);
+					}
+				} else {
+					nextAngle = lastAngle - remainAngle;
+				}
+
+				xdiv = radius * (Math.Cos(lastAngle) - Math.Cos(nextAngle));
+				ydiv = radius * (Math.Sin(lastAngle) - Math.Sin(nextAngle));
+				
+				oStream.Write("G3 ");
+				convertXCoord(state, state.XPos + xcenter, oStream);
+				oStream.Write(" ");
+				convertYCoord(state, state.YPos + ycenter, oStream);
+				state.XPos += xdiv;
+				state.YPos += ydiv;
+				oStream.Write(string.Format(NumericFormat, " I{0}", xdiv * XFactor));
+				oStream.Write(string.Format(NumericFormat, " J{0}\n", ydiv * YFactor));
+				
+
+				remainAngle -= lastAngle - nextAngle;
+				lastAngle = nextAngle;
+			}
 
 		
 			if (nextHpgl == HpglToken.EOF) return nextHpgl;
