@@ -159,61 +159,43 @@ namespace at.hpw.pcb2gcode {
 			// and http://s3.cnccookbook.com/CCCNCGCodeArcsG02G03.htm (GCODE)
 			// for info
 			// calculat the start angle
-			int Q = 1; // specify quadrant
-			if (xcenter > state.XPos) Q=2;
-			if (ycenter < state.YPos) Q=5-Q; // 2 or 3
 
-			double x1 = state.XPos;
-			double y1 = state.YPos;
-			double xdiv;
-			double ydiv;
 
 			angle = (angle * (Math.PI * 2) / 360);
 
-			double radius = Math.Sqrt(Math.Pow(xcenter-state.XPos, 2) + Math.Pow(ycenter-state.YPos, 2));
-			double startAngle = Math.Asin(Math.Abs((state.XPos - xcenter) / radius));
-			startAngle = startAngle + ((Q-1) + (Math.PI / 2));
-			double remainAngle = angle + startAngle;
-			double lastAngle = startAngle;
-			if (remainAngle < 0) remainAngle = remainAngle + (2 * Math.PI); 
-			// TODO: Process as much quadrants as needed (each one has to have a G2 or G3)
-			Console.Out.WriteLine("Converting arc radius {0}, startAngle {1}, lastAngle {2}, remainAngle {3}", radius, startAngle, lastAngle, remainAngle);
-
-			// This is my first shot - this can be way more performant....
-			while (remainAngle > 0.0001) {
-				double nextAngle = remainAngle;
-				if ((remainAngle - lastAngle) > (Math.PI / 2)) {
-					// go to the next quater
-					if (lastAngle % (Math.PI / 2) > 0.001) { // its double - so == 0 is not reliable
-						nextAngle = lastAngle - lastAngle % (Math.PI / 2);
-					} else {
-						nextAngle = lastAngle - (Math.PI / 2);
-					}
-				} else {
-					nextAngle = lastAngle - remainAngle;
-				}
-
-				xdiv = radius * (Math.Cos(lastAngle) - Math.Cos(nextAngle));
-				ydiv = radius * (Math.Sin(lastAngle) - Math.Sin(nextAngle));
-				
-				oStream.Write("G3 ");
-				convertXCoord(state, state.XPos + xcenter, oStream);
-				oStream.Write(" ");
-				convertYCoord(state, state.YPos + ycenter, oStream);
-				state.XPos += xdiv;
-				state.YPos += ydiv;
-				oStream.Write(string.Format(NumericFormat, " I{0}", xdiv * XFactor));
-				oStream.Write(string.Format(NumericFormat, " J{0}\n", ydiv * YFactor));
-				
-
-				remainAngle -= lastAngle - nextAngle;
-				lastAngle = nextAngle;
-			}
-
+			outputArc(xcenter, ycenter, angle, state, oStream);
 		
 			if (nextHpgl == HpglToken.EOF) return nextHpgl;
 			return tokenizer.readNextToken();
         }
+
+		private void outputArc(double centerX, double centerY, double angle, HpglState state, StreamWriter oStream) {
+			double dX = centerX-state.XPos;
+			double dY = centerY-state.YPos;
+			double radius = Math.Sqrt((dX*dX) + (dY*dY));
+			double startAngle = Math.Asin(Math.Abs(dY)/radius);
+			int Q = 1; // specify quadrant
+			if (centerX > state.XPos) Q=2;
+			if (centerY < state.YPos) Q=5-Q; // 2 or 3
+			startAngle = startAngle + ((Q-1) * (Math.PI / 2));
+			Console.Out.WriteLine("Converting arc radius {0}, startAngle {1}, Quadrant {2} ;; {3}", radius, startAngle, Q, angle);
+
+			double endAngle = angle + startAngle;
+
+			double endX = (Math.Cos(endAngle) * radius) + centerX;
+			double endY = (Math.Sin(endAngle) * radius) + centerY;
+
+			oStream.Write("G3 ");
+			convertXCoord(state, endX, oStream);
+			oStream.Write(" ");
+			convertYCoord(state, endY, oStream);
+			state.XPos += endX;
+			state.YPos += endY;
+			oStream.Write(string.Format(NumericFormat, " I{0}", dX * XFactor));
+			oStream.Write(string.Format(NumericFormat, " J{0}\n", dY * YFactor));
+			
+
+		}
 
         private object MakeMovements(HpglTokenizer tokenizer, HpglState state, StreamWriter oStream) {
 			object currentToken = tokenizer.readNextToken();
