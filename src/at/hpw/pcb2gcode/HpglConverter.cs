@@ -16,6 +16,7 @@ namespace at.hpw.pcb2gcode {
 
 		public HpglConverter() {
 			NumericFormat = new CultureInfo("en-US").NumberFormat;
+			
 			XFactor = -0.00762; // initial Values
 			YFactor = -0.00762; // initial Values
 			InitPosition0 = true;
@@ -174,25 +175,28 @@ namespace at.hpw.pcb2gcode {
 			double dY = centerY-state.YPos;
 			double radius = Math.Sqrt((dX*dX) + (dY*dY));
 			double startAngle = Math.Asin(Math.Abs(dY)/radius);
-			int Q = 1; // specify quadrant
-			if (centerX > state.XPos) Q=2;
-			if (centerY < state.YPos) Q=5-Q; // 2 or 3
-			startAngle = startAngle + ((Q-1) * (Math.PI / 2));
-			Console.Out.WriteLine("Converting arc radius {0}, startAngle {1}, Quadrant {2} ;; {3}", radius, startAngle, Q, angle);
+			if (centerX > state.XPos) startAngle = (Math.PI) - startAngle;
+			if (centerY < state.YPos) startAngle = (Math.PI * 2) - startAngle;
 
 			double endAngle = angle + startAngle;
 
 			double endX = (Math.Cos(endAngle) * radius) + centerX;
 			double endY = (Math.Sin(endAngle) * radius) + centerY;
 
-			oStream.Write("G3 ");
-			convertXCoord(state, endX, oStream);
+
+
+			if (angle < 0) {
+				oStream.Write("G2 ");
+			} else {
+				oStream.Write("G3 ");
+			}
+			convertXCoord(state, endX-state.XPos, oStream);
 			oStream.Write(" ");
-			convertYCoord(state, endY, oStream);
-			state.XPos += endX;
-			state.YPos += endY;
-			oStream.Write(string.Format(NumericFormat, " I{0}", dX * XFactor));
-			oStream.Write(string.Format(NumericFormat, " J{0}\n", dY * YFactor));
+			convertYCoord(state, endY-state.YPos, oStream);
+			state.XPos = endX;
+			state.YPos = endY;
+			oStream.Write(string.Format(" I{0}", convertCoordinateNumber(dX * XFactor)));
+			oStream.Write(string.Format(" J{0}\n", convertCoordinateNumber(dY * YFactor)));
 			
 
 		}
@@ -227,17 +231,17 @@ namespace at.hpw.pcb2gcode {
 
 		void convertXCoord(HpglState state, double x, StreamWriter oStream) {
 			x = x * XFactor;
-			oStream.Write(string.Format(NumericFormat, "X{0}", x));
+			oStream.Write(string.Format("X{0}", convertCoordinateNumber(x)));
 		}
 
 		void convertYCoord(HpglState state, double y, StreamWriter oStream) {
 			y = y * YFactor;
-			oStream.Write(string.Format(NumericFormat, "Y{0}", y));
+			oStream.Write(string.Format("Y{0}", convertCoordinateNumber(y)));
 		}
 
-		void convertZCoord(HpglState state, double y, StreamWriter oStream) {
-			y = y * ZFactor;
-			oStream.Write(string.Format(NumericFormat, "Z{0}", y));
+		void convertZCoord(HpglState state, double z, StreamWriter oStream) {
+			z = z * ZFactor;
+			oStream.Write(string.Format("Z{0}", convertCoordinateNumber(z)));
 		}
 
 		private void convertPD(HpglState state, StreamWriter oStream) {
@@ -287,6 +291,10 @@ namespace at.hpw.pcb2gcode {
 			oStream.Write(" ");
 			convertYCoord(state, FlipXY ? x : y, oStream);
 			oStream.Write("\n");
+		}
+
+		private string convertCoordinateNumber(double coord) {
+			return coord.ToString("#0.00000", NumericFormat);
 		}
 	}
 
