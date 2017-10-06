@@ -16,6 +16,7 @@ namespace at.hpw.pcb2gcode {
 
 		public HpglConverter() {
 			NumericFormat = new CultureInfo("en-US").NumberFormat;
+			
 			XFactor = -0.00762; // initial Values
 			YFactor = -0.00762; // initial Values
 			InitPosition0 = true;
@@ -143,12 +144,13 @@ namespace at.hpw.pcb2gcode {
 			expectHpglToken(tokenizer, HpglToken.COMMA);
 			double angle = expectNumericToken(tokenizer, "Expected angle"); // Caution - this angle seems to be in DEG instead of RAD
 			HpglToken nextHpgl = expectHpglToken(tokenizer);
-			if (nextHpgl == HpglToken.SEMICOLON) return tokenizer.readNextToken();
 			if (nextHpgl == HpglToken.COMMA) {
 				expectNumericToken(tokenizer, "Expected optional granularity");
 				nextHpgl = expectHpglToken(tokenizer);
 			}
-			expectHpglToken(tokenizer, HpglToken.SEMICOLON);
+			if (nextHpgl != HpglToken.SEMICOLON) {
+				tokenizer.throwParserException("Expected SEMICOLON");
+			}
 
 			// do the arc calculation
 			// TODO:
@@ -158,20 +160,46 @@ namespace at.hpw.pcb2gcode {
 			// and http://s3.cnccookbook.com/CCCNCGCodeArcsG02G03.htm (GCODE)
 			// for info
 			// calculat the start angle
-			int Q = 1; // specify quadrant
-			if (xcenter > state.XPos) Q=2;
-			if (ycenter < state.YPos) Q=5-Q; // 2 or 3
 
-			double radius = Math.Sqrt(Math.Pow(xcenter-state.XPos, 2) + Math.Pow(ycenter-state.YPos, 2));
-			double startAngle = Math.Asin(Math.Abs((state.XPos - xcenter) / radius));
-			startAngle = startAngle + ((Q-1) + (Math.PI / 2));
 
-			// TODO: Process as much quadrants as needed (each one has to have a G2 or G3)
+			angle = (angle * (Math.PI * 2) / 360);
 
+			outputArc(xcenter, ycenter, angle, state, oStream);
 		
 			if (nextHpgl == HpglToken.EOF) return nextHpgl;
 			return tokenizer.readNextToken();
         }
+
+		private void outputArc(double centerX, double centerY, double angle, HpglState state, StreamWriter oStream) {
+			double dX = centerX-state.XPos;
+			double dY = centerY-state.YPos;
+			double radius = Math.Sqrt((dX*dX) + (dY*dY));
+			double startAngle = Math.Asin(Math.Abs(dY)/radius);
+			if (centerX > state.XPos) startAngle = (Math.PI) - startAngle;
+			if (centerY < state.YPos) startAngle = (Math.PI * 2) - startAngle;
+
+			double endAngle = angle + startAngle;
+
+			double endX = (Math.Cos(endAngle) * radius) + centerX;
+			double endY = (Math.Sin(endAngle) * radius) + centerY;
+
+
+
+			if (angle < 0) {
+				oStream.Write("G2 ");
+			} else {
+				oStream.Write("G3 ");
+			}
+			convertXCoord(state, endX-state.XPos, oStream);
+			oStream.Write(" ");
+			convertYCoord(state, endY-state.YPos, oStream);
+			state.XPos = endX;
+			state.YPos = endY;
+			oStream.Write(string.Format(" I{0}", convertCoordinateNumber(dX * XFactor)));
+			oStream.Write(string.Format(" J{0}\n", convertCoordinateNumber(dY * YFactor)));
+			
+
+		}
 
         private object MakeMovements(HpglTokenizer tokenizer, HpglState state, StreamWriter oStream) {
 			object currentToken = tokenizer.readNextToken();
@@ -203,17 +231,17 @@ namespace at.hpw.pcb2gcode {
 
 		void convertXCoord(HpglState state, double x, StreamWriter oStream) {
 			x = x * XFactor;
-			oStream.Write(string.Format(NumericFormat, "X{0}", x));
+			oStream.Write(string.Format("X{0}", convertCoordinateNumber(x)));
 		}
 
 		void convertYCoord(HpglState state, double y, StreamWriter oStream) {
 			y = y * YFactor;
-			oStream.Write(string.Format(NumericFormat, "Y{0}", y));
+			oStream.Write(string.Format("Y{0}", convertCoordinateNumber(y)));
 		}
 
-		void convertZCoord(HpglState state, double y, StreamWriter oStream) {
-			y = y * ZFactor;
-			oStream.Write(string.Format(NumericFormat, "Z{0}", y));
+		void convertZCoord(HpglState state, double z, StreamWriter oStream) {
+			z = z * ZFactor;
+			oStream.Write(string.Format("Z{0}", convertCoordinateNumber(z)));
 		}
 
 		private void convertPD(HpglState state, StreamWriter oStream) {
@@ -263,6 +291,10 @@ namespace at.hpw.pcb2gcode {
 			oStream.Write(" ");
 			convertYCoord(state, FlipXY ? x : y, oStream);
 			oStream.Write("\n");
+		}
+
+		private string convertCoordinateNumber(double coord) {
+			return coord.ToString("#0.00000", NumericFormat);
 		}
 	}
 
