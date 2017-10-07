@@ -82,7 +82,8 @@ namespace at.hpw.pcb2gcode {
 
 			if (InitPosition0) {
 				state.LastMovementAbsolute = true;  //assuming everything we do is absolute
-				convertMovementToGcode(state, 0, 0, oStream);
+				convertPU(state, oStream);
+				convertAbsoluteMovement(state, 0, 0, oStream);
 			}
 		}
 

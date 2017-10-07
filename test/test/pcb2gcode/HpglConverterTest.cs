@@ -41,7 +41,7 @@ namespace test.pcb2gcode {
 			String output = Encoding.UTF8.GetString(outputStream.GetBuffer(), 0, (int) length);
 			Assert.Equal("G0 X0.00000 Y-0.76200\nG3 X0.00000 Y0.00000 I-0.76200 J0.00000\n" +
 						"G0 X0.00000 Y-0.76200\nG3 X0.00000 Y0.00000 I-0.76200 " +
-						"J0.00000\nG0 X0.00000 Y0.00000\n", output);
+						"J0.00000\nM5\nG0 X0.00000 Y1.52400\n", output);
 		}
 
 	}
