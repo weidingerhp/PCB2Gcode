@@ -61,7 +61,16 @@ namespace at.hpw.pcb2gcode {
 						state.LastMovementAbsolute = true;
 						token = MakeArc(tokenizer, state, oStream);
 						break;
+					case HpglToken.CI:
+						state.LastMovementAbsolute = true;
+						token = MakeCircle(tokenizer, state, oStream);
+						break;
 					case HpglToken.IN:
+						token = tokenizer.readNextToken();
+						continue;
+					case HpglToken.VS:
+						// TODO: setting speed is not yet supported
+						expectNumericToken(tokenizer);
 						token = tokenizer.readNextToken();
 						continue;
 					case HpglToken.IP: 
@@ -170,6 +179,49 @@ namespace at.hpw.pcb2gcode {
 			if (nextHpgl == HpglToken.EOF) return nextHpgl;
 			return tokenizer.readNextToken();
         }
+
+		private object MakeCircle(HpglTokenizer tokenizer, HpglState state, StreamWriter oStream) {
+			double radius = expectNumericToken(tokenizer, "Expected x-value");
+			double currentX = state.XPos;
+			double currentY = state.YPos;
+			HpglToken nextHpgl = expectHpglToken(tokenizer);
+			if (nextHpgl == HpglToken.COMMA) {
+				expectNumericToken(tokenizer, "Expected optional granularity");
+				nextHpgl = expectHpglToken(tokenizer);
+			}
+			if (nextHpgl != HpglToken.SEMICOLON) {
+				tokenizer.throwParserException("Expected SEMICOLON");
+			}
+
+			HpglState.PenState pos = state.PenPosition;
+			if (pos == HpglState.PenState.PenDown) {
+				convertPU(state, oStream);
+			}
+
+			convertRelativeMovement(state, -radius, 0, oStream);
+
+			if (pos == HpglState.PenState.PenUp) {
+				convertPD(state, oStream);
+			}
+			convertPD(state, oStream);
+			// ouput gcode arc command to draw this circle
+			oStream.Write("G2 ");
+			convertXCoord(state, 0, oStream);
+			oStream.Write(" ");
+			convertYCoord(state, 0, oStream);
+			oStream.Write(string.Format(" I{0}", convertCoordinateNumber(radius * XFactor)));
+			oStream.Write(string.Format(" J{0}\n", convertCoordinateNumber(0)));
+
+			convertPU(state, oStream);
+			convertRelativeMovement(state, radius, 0, oStream);
+
+			if (pos == HpglState.PenState.PenDown) {
+				convertPD(state, oStream);
+			}
+
+			if (nextHpgl == HpglToken.EOF) return nextHpgl;
+			return tokenizer.readNextToken();
+		}
 
 		private void outputArc(double centerX, double centerY, double angle, HpglState state, StreamWriter oStream) {
 			double dX = centerX-state.XPos;
